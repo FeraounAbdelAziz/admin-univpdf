@@ -1,7 +1,7 @@
 'use client';
 import cx from 'clsx';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import {
   Container,
   Avatar,
@@ -13,14 +13,15 @@ import {
   Burger,
   rem,
   useMantineTheme,
-  Divider,
   Drawer,
   Box,
+  Alert,
+  Button,
+  LoadingOverlay,
+  Modal,
 } from '@mantine/core';
 
-import { IconListSearch } from '@tabler/icons-react';
-
-import { useDisclosure, useMediaQuery } from '@mantine/hooks';
+import { useDisclosure } from '@mantine/hooks';
 import {
   IconLogout,
   IconHeart,
@@ -37,53 +38,42 @@ import classes from './navbar.module.css';
 
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
+import { Session, User, createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { IconAlertCircle } from '@tabler/icons-react';
+import { refreshSession } from '@/utils/getProviderAccessTokens';
 
 
 
 
-const tabs = [
-  'Dashboard',
-  'Playground',
-];
-
-
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Playground', href: '/' },
-];
+// const navigation = [
+//   { name: 'Dashboard', href: '/dashboard' },
+//   { name: 'Playground', href: '/' },
+// ];
 const links = [
   { label: 'Dashboard', link: '/dashboard', order: 1 },
   { label: 'Playground', link: '/', order: 1 },
 ];
 
 
-type User = {
-  name: string
-  email: string,
-  image: string
-}
+
 
 type Props = {
-  user: User
+  user: User | null
+  session: Session | null
 }
 
 
 
-export default function Navbar() {
 
 
-  const user = {
-    name: 'Jane Spoonfighter',
-    email: 'janspoon@fighter.dev',
-    image: 'https://avatar.vercel.sh/leerob',
-  };
+
+export default function Navbar({ session, user }: Props) {
+
 
   const pathname = usePathname();
-
-  const theme = useMantineTheme();
-
-
   const router = useRouter()
+
+
 
 
   const [opened, { toggle }] = useDisclosure(false);
@@ -91,9 +81,24 @@ export default function Navbar() {
 
 
 
-  const items = navigation.map((tab) => (
-    <Tabs.Tab  value={tab.href} key={tab.href}>
-      {tab.name}
+  //??? handle logout confirm layout and loading 
+  const [logoutConfirmOpened, { open: logoutConfirmOpen, close: logoutConfirmClose }] = useDisclosure(false);
+  const [logoutPending, setTransactionLogout] = useTransition()
+  //???
+
+
+
+
+
+
+
+
+
+
+  //?? routes
+  const items = links.map((tab) => (
+    <Tabs.Tab value={tab.link} key={tab.link}>
+      {tab.label}
     </Tabs.Tab>
   ));
 
@@ -102,14 +107,16 @@ export default function Navbar() {
       component="a"
       href={item.link}
       onClick={(event) => { event.preventDefault(); router.push(item.link) }}
+
       key={item.label}
+
       className={cx(classes.link, { [classes.linkActive]: pathname === item.link })}
       style={{ paddingLeft: `calc(${item.order} * var(--mantine-spacing-md))` }}
     >
       {item.label}
     </Box>
   ));
-
+  //??
 
   return (
     <>
@@ -118,8 +125,7 @@ export default function Navbar() {
         <Container className={classes.mainSection} size="md">
           <Group justify="space-between">
 
-
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            {session && <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />}
 
             <div></div>
             <Menu
@@ -135,95 +141,80 @@ export default function Navbar() {
                   className={cx(classes.user, { [classes.userActive]: userMenuOpened })}
                 >
                   <Group gap={7}>
-                    <Avatar src={user.image} alt={user.name} radius="xl" size={20} />
+
+                    {user && <Avatar  src={user?.user_metadata.avatar_url} radius="xl" size={24} />}
+
+
+                    {/* <pre>{JSON.stringify(user, null, 2)}</pre> */}
+
                     <Text fw={500} size="sm" lh={1} mr={3}>
-                      {user.name}
+                      {user ? user?.user_metadata.full_name : "unauthenticated"}
+
                     </Text>
                     <IconChevronDown style={{ width: rem(12), height: rem(12) }} stroke={1.5} />
                   </Group>
                 </UnstyledButton>
               </Menu.Target>
+
               <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={
-                    <IconHeart
-                      style={{ width: rem(16), height: rem(16) }}
-                      color={theme.colors.red[6]}
-                      stroke={1.5}
-                    />
-                  }
-                >
-                  Liked posts
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={
-                    <IconStar
-                      style={{ width: rem(16), height: rem(16) }}
-                      color={theme.colors.yellow[6]}
-                      stroke={1.5}
-                    />
-                  }
-                >
-                  Saved posts
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={
-                    <IconMessage
-                      style={{ width: rem(16), height: rem(16) }}
-                      color={theme.colors.blue[6]}
-                      stroke={1.5}
-                    />
-                  }
-                >
-                  Your comments
-                </Menu.Item>
 
-                <Menu.Label>Settings</Menu.Label>
-                <Menu.Item
-                  leftSection={
-                    <IconSettings style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-                  }
-                >
-                  Account settings
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={
-                    <IconSwitchHorizontal style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-                  }
-                >
-                  Change account
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={
-                    <IconLogout style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-                  }
-                >
-                  Logout
-                </Menu.Item>
 
-                <Menu.Divider />
 
-                <Menu.Label>Danger zone</Menu.Label>
-                <Menu.Item
-                  leftSection={
-                    <IconPlayerPause style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-                  }
-                >
-                  Pause subscription
-                </Menu.Item>
-                <Menu.Item
-                  color="red"
-                  leftSection={<IconTrash style={{ width: rem(16), height: rem(16) }} stroke={1.5} />}
-                >
-                  Delete account
-                </Menu.Item>
+                {!session ?
+                  <Menu.Item
+                    leftSection={
+                      <IconSwitchHorizontal style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
+                    }
+                    onClick={() => {
+                      signInWithProvider()
+                    }}
+
+                  >
+                    login
+                  </Menu.Item>
+                  :
+                  <>
+                    <Menu.Item
+                      leftSection={
+                        <IconLogout style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
+                      }
+                      onClick={() => {
+
+                        logoutConfirmOpen()
+
+                      }}
+
+                    >
+                      Logout
+                    </Menu.Item>
+                    {/* <Menu.Item
+                      leftSection={
+                        <IconLogout style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
+                      }
+                      onClick={() => {
+
+                        refreshSession()
+
+                      }}
+
+                    >
+                      refresh session
+                    </Menu.Item> */}
+                  </>
+
+                }
+
+
               </Menu.Dropdown>
             </Menu>
+
 
 
           </Group>
         </Container>
         <Container size="md">
+
+
           <Tabs
             defaultValue="/dashboard"
             variant="default"
@@ -232,12 +223,15 @@ export default function Navbar() {
               if (value) {
                 router.push(value)
               }
-
             }}
 
           >
-            <Tabs.List>{items}</Tabs.List>
+            {!session && <div style={{ padding: '22px 0' }}  ></div>}
+            <Tabs.List> {session && items}</Tabs.List>
+
           </Tabs>
+
+
         </Container>
 
       </div>
@@ -249,14 +243,88 @@ export default function Navbar() {
         transitionProps={{ transition: 'rotate-left', duration: 150, timingFunction: 'linear' }}
       >
 
-        <div>
+        {session && <div>
           {items_2}
-        </div>
+        </div>}
+
       </Drawer>
+
+
+      <Modal
+        overlayProps={{
+          backgroundOpacity: 0.55,
+          blur: 3,
+        }}
+
+
+        padding={0}
+
+        withCloseButton={false}
+        opened={logoutConfirmOpened} onClose={logoutConfirmClose}  >
+        <Alert variant="light" color="red" title="Confirm Action" icon={<IconAlertCircle />}>
+          Are you sure you want to logout
+          <Group justify='end' mt={'md'} p={'xs'} >
+            <Button
+              onClick={() => {
+                logoutConfirmClose()
+              }}
+
+              disabled={logoutPending}
+
+              variant='white' >cancel</Button>
+            <Button color="red"
+              onClick={() => {
+
+                setTransactionLogout(async () => { await signOut(); logoutConfirmClose() })
+
+
+              }}
+
+              disabled={logoutPending}
+
+            >logout</Button>
+          </Group>
+        </Alert>
+        <LoadingOverlay visible={logoutPending} />
+
+      </Modal >
 
     </>
 
 
 
   );
+}
+
+
+export async function signInWithProvider() {
+  const supabase = createClientComponentClient();
+
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: 'http://localhost:3000/api/auth/callback',
+      scopes: 'https://www.googleapis.com/auth/drive',
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent'
+      },
+
+    },
+  })
+
+  if (error) { console.error(error); return };
+
+}
+
+
+export async function signOut() {
+
+  const supabase = createClientComponentClient();
+  const { error } = await supabase.auth.signOut()
+
+  if (error) { console.error(error); return };
+
+
 }

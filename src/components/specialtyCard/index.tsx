@@ -1,36 +1,39 @@
 'use client'
-import { ActionIcon, Badge, Card, Chip, Flex, Loader, Menu, MenuDropdown, Progress, Text, Title, Tooltip } from '@mantine/core'
+import { ActionIcon, Badge, Button, Card, Center, Flex, GridCol, Loader, Menu, MenuDropdown, NumberFormatter, Progress, Text, Title, Tooltip } from '@mantine/core'
 import React, { useEffect, useState, useTransition } from 'react'
-import Search from '../search'
-import { BarList, Metric } from '@tremor/react'
 import { IconArrowRight, IconCirclePlus, IconDotsVertical, } from '@tabler/icons-react';
-import { useDisclosure, useId } from '@mantine/hooks'
+import { useDisclosure, useMediaQuery, useSetState } from '@mantine/hooks'
 import { SpecialtyModal } from '../specialtyModal'
-import { IconSlash } from '@tabler/icons-react'
 import SpecialtySearch from '../specialtySearch'
 import { useRouter } from 'next/navigation'
 
-type Specialty = {
+type Modules = {
+    module_id: string
     name: string,
     value: number,
 }[]
 
 type Props = {
+    category_id: string
     category: string,
     stat: string,
-    data: Specialty
+    data: Modules
 }
 
 
-export default function SpecialtyCard({ category, data, stat }: Props) {
+export default function SpecialtyCard({ category_id, category, data, stat }: Props) {
 
     const [createSpecialtyOpened, { close: closeCreateSpecialty, open: openCreateSpecialty }] = useDisclosure()
 
     const [searchValue, setSearchValue] = useState('')
 
-    const [_data, setData] = useState<Specialty | []>([])
+    const [_data, setData] = useState<Modules | []>([])
 
     const [isPending, startTransition] = useTransition();
+
+
+    const [slice, setSlice] = useState(5)
+
 
 
     const router = useRouter()
@@ -40,7 +43,11 @@ export default function SpecialtyCard({ category, data, stat }: Props) {
 
         startTransition(() => {
 
-            setData(data.filter((item) => item.name.toLowerCase().includes(searchValue.toLowerCase())))
+            setData([
+                ...data.filter((item) => item.name.toLowerCase().includes(searchValue.toLowerCase())),
+                ...data.filter((item) => !item.name.toLowerCase().includes(searchValue.toLowerCase()))
+            ]
+            )
 
         })
 
@@ -49,11 +56,21 @@ export default function SpecialtyCard({ category, data, stat }: Props) {
     }, [searchValue])
 
 
+    const md = useMediaQuery('(min-width: 	62em)')
+    const sm = useMediaQuery('(min-width: 	48em)')
+    const xs = useMediaQuery('(min-width: 	36em)')
+
+
+
 
     return (
-        <>
+
+        <GridCol span={md ? 2 : sm ?  3 : 6}  >
             <Card
                 radius={'md'}
+                shadow={'xs'}
+                withBorder
+                mih={"100%"}
             >
                 <Flex justify={'end'} >
                     <Menu shadow="md" width={200}>
@@ -74,7 +91,9 @@ export default function SpecialtyCard({ category, data, stat }: Props) {
                                 Add Specialty Folder
                             </Menu.Item>
                             <Menu.Item
-                                onClick={() => { router.push(`dashboard/${category}`) }}
+
+                                //TODO replace with the path to specialty               
+                                // onClick={() => { router.push(`dashboard/${category}`) }}
 
                                 leftSection={<IconArrowRight />}
                             >
@@ -85,20 +104,24 @@ export default function SpecialtyCard({ category, data, stat }: Props) {
                     </Menu>
                 </Flex>
 
+                <div style={{ paddingBottom: '16px' }} ></div>
 
                 <SpecialtySearch isPending={isPending} searchValue={searchValue} setSearchValue={setSearchValue} />
-                <div className='pb-2' ></div>
+                <div style={{ paddingBottom: '16px' }} ></div>
                 <Title>{category}</Title>
+                <div style={{ paddingBottom: '8px' }} ></div>
                 <Flex
                     justify="start"
                     align="baseline"
-                    className="space-x-2"
+                    gap={'sm'}
                 >
-                    <Badge size='xl' radius={'sm'} variant='light' >{stat}</Badge>
-                    <Text>Total views</Text>
+                    <Badge size='xl' radius={'sm'} variant='light' ><NumberFormatter thousandSeparator value={stat} /></Badge>
+                    <Text>Total courses</Text>
                 </Flex>
-                <Flex className="mt-6">
-                    <Text>Modules courses</Text>
+
+
+                <Flex mt={'md'}>
+                    <Text>Modules</Text>
                 </Flex>
 
 
@@ -106,9 +129,11 @@ export default function SpecialtyCard({ category, data, stat }: Props) {
 
                 {
                     searchValue.length > 0 && _data.length > 0 && !isPending ?
-                        _data.map((module) => {
+                        _data.slice(0, slice).map((module) => {
 
-                            let value = (module.value / 2000) * 100
+                            let value = 0;
+                            if (Number(stat) > 0)
+                                value = (module.value / Number(stat)) * 100
 
                             return (
                                 <Flex
@@ -116,22 +141,22 @@ export default function SpecialtyCard({ category, data, stat }: Props) {
                                     justify={'space-between'}
                                     align={'center'}
                                     px={'md'}
-
+                                    style={{ cursor: 'pointer' }}
                                     onClick={() => {
-                                        router.push(`dashboard/${category}/${module.name}`)
+                                        // router.push(`dashboard/${category}/${module.name}`)
                                     }}
-                                    className='cursor-pointer'
 
-                                    
+
+
 
 
                                 >
                                     <Progress.Root w={'90%'}
-                                        
+
                                         my={'sm'} size={40}>
                                         <Tooltip label={`${module.value}`}>
                                             <Progress.Section
-                                                
+
 
 
 
@@ -159,45 +184,51 @@ export default function SpecialtyCard({ category, data, stat }: Props) {
                         //         <Loader type='bars' />
                         //     </Flex>
                         :
-                        data.map((module) => {
+                        data.slice(0, slice).map((module) => {
 
-                            let value = (module.value / 2000) * 100
+
+                            let value = 0;
+                            if (Number(stat) > 0)
+                                value = (module.value / Number(stat)) * 100
 
                             return (
-                                <Flex
-                                    key={module.name}
+                                    <Flex
+                                        key={module.name}
 
-                                    justify={'space-between'}
-                                    align={'center'}
-                                    px={'md'}
+                                        justify={'space-between'}
+                                        align={'center'}
+                                        px={'md'}
 
-                                    onClick={() => {
-                                        router.push(`dashboard/${category}/${module.name}`)
-                                    }}
-                                    className='cursor-pointer'
+                                        onClick={() => {
+                                            router.push(`dashboard/${category_id}/${module.module_id}`)
+                                        }}
+                                        style={{ cursor: 'pointer' }}
 
-                                >
-                                    <Progress.Root w={'90%'}
-                                        my={'sm'} size={40}>
-                                        <Tooltip label={`${module.value}`}>
-                                            <Progress.Section 
-                                            className='cursor-pointer'
-                                                style={{ justifyContent: 'start', overflow: 'visible' }}
-                                                value={value}
-                                                color="blue"
+                                    >
+                                        <Progress.Root w={'90%'}
+                                            my={'sm'} size={40}>
+                                            <Tooltip label={`${module.value}`}>
+                                                <Progress.Section
+                                                    className='cursor-pointer'
+                                                    style={{ justifyContent: 'start', overflow: 'visible' }}
+                                                    value={value}
+                                                    color="blue"
 
-                                            >
-                                                <Progress.Label
-                                                    style={{ overflow: 'visible', color: 'black' }}
-                                                    p={'md'}   >
-                                                    {module.name}
-                                                </Progress.Label>
-                                            </Progress.Section>
-                                        </Tooltip>
+                                                >
+                                                    <Progress.Label
+                                                        style={{ overflow: 'visible', color: 'black' }}
+                                                        p={'md'}   >
+                                                        {module.name}
+                                                    </Progress.Label>
+                                                </Progress.Section>
+                                            </Tooltip>
 
-                                    </Progress.Root>
-                                    <Text w={'5%'}  >{module.value}</Text>
-                                </Flex>
+                                        </Progress.Root>
+                                        <Text w={'5%'}  >{module.value}</Text>
+                                    </Flex>
+
+
+
                             )
                         })
 
@@ -207,10 +238,37 @@ export default function SpecialtyCard({ category, data, stat }: Props) {
 
 
 
+                {data.length > slice ? <Center >
+                    <Button variant='transparent'
+                        onClick={
+                            () => {
+                                setSlice(slice => slice + 5)
+                            }
+                        }
+                    >
+
+                        <Text display={"flex"} size='sm' >show more</Text>
+
+                    </Button>
+                </Center> : null}
+
+                {slice > 5 && data.length > 5 ? <Center >
+                    <Button variant='transparent'
+                        onClick={
+                            () => {
+                                setSlice(slice => slice - 5)
+                            }
+                        }
+                    >
+
+                        <Text display={"flex"} size='sm' >show less</Text>
+
+                    </Button>
+                </Center> : null}
+
             </Card >
-
             <SpecialtyModal opened={createSpecialtyOpened} close={closeCreateSpecialty} />
-
-        </>
+        </GridCol >
     )
 }
+

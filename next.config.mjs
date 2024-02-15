@@ -2,7 +2,10 @@
 const nextConfig = {
 
   experimental: {
-    // optimizePackageImports: ['@mantine/core', '@mantine/hooks', 'mantine-react-table'],
+    serverActions: { 
+      bodySizeLimit : '40mb'
+    },
+    optimizePackageImports: ['@mantine/core', '@mantine/hooks', 'mantine-react-table'],
   },
   images: {
     remotePatterns: [

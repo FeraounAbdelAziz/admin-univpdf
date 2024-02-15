@@ -1,130 +1,81 @@
-'use client';
 
-import { Title, Grid } from '@tremor/react';
-import Search from '@/components/search';
-import SpecialtyCard from '@/components/specialtyCard';
-import { useEffect, useId, useState, useTransition } from 'react';
-import { Button, Flex, LoadingOverlay } from '@mantine/core';
-import SpecialtySearch from '@/components/specialtySearch';
-import { SpecialtyModal } from '@/components/specialtyModal';
-import { useDisclosure } from '@mantine/hooks';
+import { Container, Flex, Grid } from '@mantine/core';
+import DashBoardCards from '@/components/dashboardCards';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
-type Specialty = {
+type Modules = {
+  module_id: string
   name: string,
   value: number,
 }[]
 
 
-const cs = [
-  { name: '/AI', value: 1230, href: 'hello', color: 'black' },
-  { name: '/linear algebra', value: 751 },
-  { name: '/algorithm', value: 471 },
-  { name: '/advance Algorithm', value: 280 },
-  { name: '/logical programming', value: 78 },
-
-];
-
-const chemistry = [
-  { name: '/AI', value: 1230 },
-  { name: '/linear algebra', value: 751 },
-  { name: '/algorithm', value: 471 },
-  { name: '/advance Algorithm', value: 280 },
-  { name: '/logical programming', value: 78 },
-];
-
-const technology = [
-  { name: '/AI', value: 1230 },
-  { name: '/linear algebra', value: 751 },
-  { name: '/algorithm', value: 471 },
-  { name: '/advance Algorithm', value: 280 },
-  { name: '/logical programming', value: 78 },
-];
-
-const data = [
-  {
-    category: 'computer science',
-    stat: '10,234',
-    data: cs
-  },
-  {
-    category: 'chemistry',
-    stat: '12,543',
-    data: chemistry
-  },
-  {
-    category: 'IT',
-    stat: '2,543',
-    data: technology
-  },
-
-
-];
-
 
 type Specialties = {
+  category_id: string,
   category: string,
-  stat: string
-  data: Specialty
+  stat: string,
+  data: Modules,
 }[]
 
 
 
-export default function DashBoardPage() {
-
-
-  //? create specialty 
-  const [createSpecialtyOpened, { open: openCreateSpecialty, close: closeCreateSpecialty }] = useDisclosure()
-  //?
-
-  //? search stuff
-  const [searchValue, setSearchValue] = useState('')
-  const [_data, setData] = useState<Specialties | []>([])
-  const [isPending, startTransition] = useTransition()
-  //?
+export default async function DashBoardPage() {
 
 
 
-  useEffect(() => {
+  const supabase = createServerComponentClient({ cookies })
 
-    startTransition(() => {
-
-      setData(data.filter((item) => item.category.toLowerCase().includes(searchValue.toLowerCase())))
-    })
+  let { data: specialty, error } = await supabase
+    .from('specialty_module_view').select('*')
 
 
 
-  }, [searchValue])
+  const groupedData = specialty?.reduce((result, item) => {
+    const key = `${item.specialty_id}_${item.specialty_name}`;
+
+    if (!result[key]) {
+      result[key] = {
+
+        category_id: item.specialty_id,
+        category: item.specialty_name,
+        stat: item.specialty_number_of_all_courses_in_all_modules,
+
+        data: []
+      };
+    }
+
+    result[key].data.push({
+      module_id: item.module_id,
+      name: item.module_name,
+      value: item.module_number_of_courses
+    });
+
+
+
+    return result;
+  }, {});
+
+
+  for (const key in groupedData) {
+    groupedData[key].data.sort((a: any, b: any) => b.value - a.value);
+  }
+
+  const groupedArray = Object.values(groupedData);
 
 
 
 
 
   return (
-    <main className="p-4 md:p-10 mx-auto max-w-7xl">
-      <div className="pb-5 mx-auto max-w-full">
-        <SpecialtySearch isPending={isPending} searchValue={searchValue} setSearchValue={setSearchValue} />
+    <main >
 
-      </div>
+      <Container size={'xl'}>
 
+        <DashBoardCards data={groupedArray as Specialties} />
 
-      <Grid numItemsSm={2} numItemsLg={3} className="gap-6">
-
-        {
-          searchValue.length > 0 && _data.length > 0 && !isPending ?
-
-            _data.map((item) => (
-              <SpecialtyCard key={item.category} category={item.category} data={item.data} stat={item.stat} />
-            )) :
-
-            data.map((item) => (
-              <SpecialtyCard key={item.category} category={item.category} data={item.data} stat={item.stat} />
-            ))
-        }
-      </Grid>
-
-      <SpecialtyModal close={closeCreateSpecialty} opened={createSpecialtyOpened} />
-
-      {/* <Chart /> */}
+      </Container>
     </main>
   );
 }

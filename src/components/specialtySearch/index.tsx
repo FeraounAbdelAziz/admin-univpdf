@@ -9,7 +9,7 @@ import { IconSearch } from '@tabler/icons-react'
 type Props = {
     disabled?: boolean,
     searchValue: string,
-    setSearchValue: React.Dispatch<React.SetStateAction<string>>,
+    setSearchValue: (newValue: string) => void, 
     isPending: boolean, 
 
 }
