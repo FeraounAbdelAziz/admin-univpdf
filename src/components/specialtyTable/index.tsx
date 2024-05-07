@@ -193,7 +193,7 @@ export default function SpecialtyTable({ data }: Props) {
     }, {
       header: 'image url',
       accessorKey: 'image_url',
-      Cell: ({ renderedCellValue, row }) => (
+      Cell: ({ row }) => (
         <Box>
           <Image
             alt="avatar"
@@ -392,7 +392,7 @@ export default function SpecialtyTable({ data }: Props) {
       ),
 
 
-      renderRowActionMenuItems: ({ table, row, staticRowIndex }) => (
+      renderRowActionMenuItems: ({ row }) => (
         <>
           <Menu.Item
             onClick={() => {

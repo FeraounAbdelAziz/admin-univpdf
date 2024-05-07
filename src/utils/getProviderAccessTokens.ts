@@ -78,7 +78,7 @@ export async function refreshSession(provider_refresh_token?: string | null | un
         const headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
         };
-
+        
 
         const body = new URLSearchParams({
             client_secret: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET || "",

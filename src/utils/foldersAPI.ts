@@ -125,7 +125,7 @@ export async function createFolderInsideRoot({ fileName }: { fileName: string })
     const { data: { session } } = await supabase.auth.getSession()
 
 
-    const parentId = "1xfQk_VPRhiikRJlxjclN8mMDvbfTN4tQ"
+    const parentId = "1j2rH1TcUcErYp89kz_6mPYRKpCDEPCdQ" // root floder id from mt google drive
 
     try {
         const response = await fetch('https://www.googleapis.com/drive/v3/files', {
@@ -243,9 +243,9 @@ export async function moveToTrash({ folderId }: { folderId: string }) {
     const { data: { session } } = await supabase.auth.getSession()
 
 
-    const trashId = '1lSLTT7k-xqTuDJh4ZyXJfrp2041_TBiT'
+    const trashId = '1-eI-X7FKica2mV4E3t50Rj4lJURij6x5'
 
-    const rootId = "1xfQk_VPRhiikRJlxjclN8mMDvbfTN4tQ"
+    const rootId = "1j2rH1TcUcErYp89kz_6mPYRKpCDEPCdQ" // root id
 
 
     try {
@@ -314,7 +314,7 @@ export async function getAllRootFiles() {
     const { data: { session } } = await supabase.auth.getSession()
 
     try {
-        const response = await fetch(`https://www.googleapis.com/drive/v3/files?q="1xfQk_VPRhiikRJlxjclN8mMDvbfTN4tQ"+in+parents&&fields=files(name ,+originalFilename,+kind,+id)`, {
+        const response = await fetch(`https://www.googleapis.com/drive/v3/files?q="1j2rH1TcUcErYp89kz_6mPYRKpCDEPCdQ"+in+parents&&fields=files(name ,+originalFilename,+kind,+id)`, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${session?.provider_token}`,

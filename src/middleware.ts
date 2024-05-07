@@ -1,6 +1,6 @@
-import { User, createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
-import { NextRequest, NextResponse } from 'next/server';
-import { refreshSession } from './utils/getProviderAccessTokens';
+import { User, createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
+import { NextRequest, NextResponse } from "next/server";
+import { refreshSession } from "./utils/getProviderAccessTokens";
 
 /**
  * Any Server Component route that uses a Supabase client must be added to this
@@ -13,71 +13,47 @@ interface ExtendedUser extends User {
   providerRefreshToken: string;
 }
 
-
 export async function middleware(req: NextRequest) {
-
-
-
-
   const res = NextResponse.next();
-
-
-
 
   const supabase = createMiddlewareClient({ req, res });
 
   const {
     data: { session },
-  } = await supabase.auth.getSession()
-
+  } = await supabase.auth.getSession();
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-
-
-
-  console.log(session?.user)
-
-
-
+  console.log(session?.user);
 
   // if user is signed in and the current path is / redirect the user to /account
-  if (user &&
+  if (
+    user &&
     (session?.user as ExtendedUser)?.providerAccessToken &&
     (session?.user as ExtendedUser)?.providerRefreshToken &&
-    req.nextUrl.pathname === '/login'
+    req.nextUrl.pathname === "/login"
   ) {
-
-    return NextResponse.redirect(new URL('/', req.url))
-
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
+  // if (
+  //   !(user &&
+  //     (session?.user as ExtendedUser)?.providerAccessToken &&
+  //     (session?.user as ExtendedUser)?.providerRefreshToken) &&
+  //   req.nextUrl.pathname !== '/login'
 
+  // ) {
+  //   // await supabase.auth.signOut()
 
-  if (
+  //   return NextResponse.redirect(new URL('/login', req.url))
 
-    !(user &&
-      (session?.user as ExtendedUser)?.providerAccessToken &&
-      (session?.user as ExtendedUser)?.providerRefreshToken) &&
-    req.nextUrl.pathname !== '/login'
-
-  ) {
-    // await supabase.auth.signOut()
-
-    return NextResponse.redirect(new URL('/login', req.url))
-
-  }
-
+  // }
 
   return res;
-
-
 }
 
-
-
 export const config = {
-  matcher: ['/', '/login', '/dashboard', '/dashboard/:path*'],
+  matcher: ["/", "/login", "/dashboard", "/dashboard/:path*"],
 };
